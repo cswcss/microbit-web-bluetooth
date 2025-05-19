@@ -1,278 +1,461 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Web Bluetooth micro:bit UART</title>
+    <title>Smart Home Control Panel</title>
     <style>
         body { background-color:#FFD0D0; font-family: sans-serif; }
         p, button, input { font-size: 16px; }
+        #status_display {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .loading {
+            color: #888;
+            font-style: italic;
+        }
+        .status-complete {
+            font-weight: bold;
+            color: #008800;
+        }
+        .status-pending {
+            color: #888;
+        }
     </style>
 </head>
 <body id="body">
 
-    <h1>Web Bluetooth micro:bit UART</h1>
-    <p>Scan Bluetooth devices (using "BBC micro:bit" as namePrefix filter). Allows to interact with the micro:bit using the Bluetooth UART service.<br>
-    Example MakeCode micro:bit project 
-    <a href="https://makecode.microbit.org/_9TPWorUACfpp" target="_blank">here</a> 
-    (or <a href="https://makecode.microbit.org/#pub:_9TPWorUACfpp" target="_blank">here</a> to open in MakeCode directly).
+    <h1>Smart Home Control  Panel 🎛</h1>
+    <p>
+        Welcome back, please connect your hub first.
     </p>
 
-    <button onclick="connect()">Connect</button>
-    <button onclick="disconnect()">Disconnect</button>
+    <button onclick="connect()">Connect to hub</button>
+    <button onclick="disconnect()">Disconnect from hub</button>
 
-    <h2>RX</h2>
-    <input type="text" id="rxText" maxlength="19">
-    <button onclick="writeRx()">Write</button>
-    
     <br><br>
-    <p id="status_aircon">aircon: (unknown)</p>
-<p id="status_lightsensor">lightsensor: (unknown)</p>
-<p id="status_lightcontrol">lightcontrol: (unknown)</p>
+    <!-- Status -->
+    <div id="status_display">
+        <h3>HOME STATUS🏡<span id="status_loading" class="loading"></span></h3>
+        <p id="status_lightsensor_text" class="status-pending">Light Sensor：Unknown</p>
+        <p id="status_aircon_text" class="status-pending">AC：UNKNOWN</p>
+        <p id="status_lightcontrol_text" class="status-pending">LIGHT：UNKNOWN</p>
+    </div>
 
-    <button onclick="sendAirconToggle()">Toggle Aircon</button>
-    <button onclick="sendLightToggle()">Toggle Light</button>
+    <!-- 直接命令按鈕 -->
+    <p>Light 💡</p>
+    <p>
+    <button onclick="setRxText('SET lightcontrol 1')">TURN ON🔛</button>
+    <button onclick="setRxText('SET lightcontrol 0')">TURN OFF 📴</button>
+    </p>
+    
+    <p>Air conditioner</p>
+    <p>
+    <button onclick="setRxText('SET aircon 1')">TURN ON🔛</button>
+    <button onclick="setRxText('SET aircon 0')">TURN OFF 📴</button>
+    </p>
+    <h2>Transmitting Area</h2>
+    <input type="text" id="rxText" maxlength="19">
+    <button onclick="writeRx()">CONFIRM COMMAND</button>
+    
+    <br>
+    <button onclick="refreshStates()">Refresh Status</button>
 
-    <h2>TX <button onclick="clearTx()">Clear</button></h2>
+    <h2>Received Data<button onclick="clearTx()">Clear🗑️</button></h2>
     <p id="tx" style="font-family:'Courier New',Courier,monospace"></p>
 
-    <h2>Log <button onclick="clearLog()">Clear</button></h2>
+    <h2>log <button onclick="clearLog()">Clear🗑️</button></h2>
     <p id="log" style="font-family:'Courier New',Courier,monospace"></p>
 
     <script>
-   /**
- * Connects to a Bluetooth device.
- * The background color shows if a Bluetooth device is connected (green) or
- * disconnected (red).
- * Allows to interact with the characteristics of the micro:bit Bluetooth UART
- * service.
- */
-
-var bluetoothDevice;
-
-
-
-/**
- * Object containing the Bluetooth UUIDs of all the services and
- * characteristics of the micro:bit.
- */
-microbitUuid = {
     /**
-     * Services
+     * 包含micro:bit所有服務和特徵的藍牙UUID的對象
      */
-    genericAccess:                              ["00001800-0000-1000-8000-00805f9b34fb", "Generic Access"],
-    genericAttribute:                           ["00001801-0000-1000-8000-00805f9b34fb", "Generic Attribute"],
-    deviceInformation:                          ["0000180a-0000-1000-8000-00805f9b34fb", "Device Information"],
-    accelerometerService:                       ["e95d0753-251d-470a-a062-fa1922dfa9a8", "Accelerometer Service"],
-    magnetometerService:                        ["e95df2d8-251d-470a-a062-fa1922dfa9a8", "Magnetometer Service"],
-    buttonService:                              ["e95d9882-251d-470a-a062-fa1922dfa9a8", "Button Service"],
-    ioPinService:                               ["e95d127b-251d-470a-a062-fa1922dfa9a8", "IO Pin Service"],
-    ledService:                                 ["e95dd91d-251d-470a-a062-fa1922dfa9a8", "LED Service"],
-    eventService:                               ["e95d93af-251d-470a-a062-fa1922dfa9a8", "Event Service"],
-    dfuControlService:                          ["e95d93b0-251d-470a-a062-fa1922dfa9a8", "DFU Control Service"],
-    temperatureService:                         ["e95d6100-251d-470a-a062-fa1922dfa9a8", "Temperature Service"],
-    uartService:                                ["6e400001-b5a3-f393-e0a9-e50e24dcca9e", "UART Service"],
+    var microbitUuid = {
+        /**
+         * 服務
+         */
+        genericAccess:                              ["00001800-0000-1000-8000-00805f9b34fb", "一般訪問"],
+        genericAttribute:                           ["00001801-0000-1000-8000-00805f9b34fb", "一般屬性"],
+        deviceInformation:                          ["0000180a-0000-1000-8000-00805f9b34fb", "設備信息"],
+        accelerometerService:                       ["e95d0753-251d-470a-a062-fa1922dfa9a8", "加速度計服務"],
+        magnetometerService:                        ["e95df2d8-251d-470a-a062-fa1922dfa9a8", "磁力計服務"],
+        buttonService:                              ["e95d9882-251d-470a-a062-fa1922dfa9a8", "按鈕服務"],
+        ioPinService:                               ["e95d127b-251d-470a-a062-fa1922dfa9a8", "IO引腳服務"],
+        ledService:                                 ["e95dd91d-251d-470a-a062-fa1922dfa9a8", "LED服務"],
+        eventService:                               ["e95d93af-251d-470a-a062-fa1922dfa9a8", "事件服務"],
+        dfuControlService:                          ["e95d93b0-251d-470a-a062-fa1922dfa9a8", "DFU控制服務"],
+        temperatureService:                         ["e95d6100-251d-470a-a062-fa1922dfa9a8", "溫度服務"],
+        uartService:                                ["6e400001-b5a3-f393-e0a9-e50e24dcca9e", "UART服務"],
+        /**
+         * 特徵
+         */
+        deviceName:                                 ["00002a00-0000-1000-8000-00805f9b34fb", "設備名稱"],
+        appearance:                                 ["00002a01-0000-1000-8000-00805f9b34fb", "外觀"],
+        peripheralPreferredConnectionParameters:    ["00002a04-0000-1000-8000-00805f9b34fb", "外設首選連接參數"],
+        serviceChanged:                             ["00002a05-0000-1000-8000-00805f9b34fb", "服務已更改"],
+        modelNumberString:                          ["00002a24-0000-1000-8000-00805f9b34fb", "型號字符串"],
+        serialNumberString:                         ["00002a25-0000-1000-8000-00805f9b34fb", "序列號字符串"],
+        hardwareRevisionString:                     ["00002a27-0000-1000-8000-00805f9b34fb", "硬件版本字符串"],
+        firmwareRevisionString:                     ["00002a26-0000-1000-8000-00805f9b34fb", "固件版本字符串"],
+        manufacturerNameString:                     ["00002a29-0000-1000-8000-00805f9b34fb", "製造商名稱字符串"],
+        accelerometerData:                          ["e95dca4b-251d-470a-a062-fa1922dfa9a8", "加速度計數據"],
+        accelerometerPeriod:                        ["e95dfb24-251d-470a-a062-fa1922dfa9a8", "加速度計週期"],
+        magnetometerData:                           ["e95dfb11-251d-470a-a062-fa1922dfa9a8", "磁力計數據"],
+        magnetometerPeriod:                         ["e95d386c-251d-470a-a062-fa1922dfa9a8", "磁力計週期"],
+        magnetometerBearing:                        ["e95d9715-251d-470a-a062-fa1922dfa9a8", "磁力計方位"],
+        magnetometerCalibration:                    ["e95db358-251d-470a-a062-fa1922dfa9a8", "磁力計校準"],
+        buttonAState:                               ["e95dda90-251d-470a-a062-fa1922dfa9a8", "按鈕A狀態"],
+        buttonBState:                               ["e95dda91-251d-470a-a062-fa1922dfa9a8", "按鈕B狀態"],
+        pinData:                                    ["e95d8d00-251d-470a-a062-fa1922dfa9a8", "引腳數據"],
+        pinADConfiguration:                         ["e95d5899-251d-470a-a062-fa1922dfa9a8", "引腳AD配置"],
+        pinIOConfiguration:                         ["e95db9fe-251d-470a-a062-fa1922dfa9a8", "引腳IO配置"],
+        pwmControl:                                 ["e95dd822-251d-470a-a062-fa1922dfa9a8", "PWM控制"],
+        ledMatrixState:                             ["e95d7b77-251d-470a-a062-fa1922dfa9a8", "LED矩陣狀態"],
+        ledText:                                    ["e95d93ee-251d-470a-a062-fa1922dfa9a8", "LED文本"],
+        scrollingDelay:                             ["e95d0d2d-251d-470a-a062-fa1922dfa9a8", "滾動延遲"],
+        microbitRequirements:                       ["e95db84c-251d-470a-a062-fa1922dfa9a8", "MicroBit需求"],
+        microbitEvent:                              ["e95d9775-251d-470a-a062-fa1922dfa9a8", "MicroBit事件"],
+        clientRequirements:                         ["e95d23c4-251d-470a-a062-fa1922dfa9a8", "客戶端需求"],
+        clientEvent:                                ["e95d5404-251d-470a-a062-fa1922dfa9a8", "客戶端事件"],
+        dfuControl:                                 ["e95d93b1-251d-470a-a062-fa1922dfa9a8", "DFU控制"],
+        temperature:                                ["e95d9250-251d-470a-a062-fa1922dfa9a8", "溫度"],
+        temperaturePeriod:                          ["e95d1b25-251d-470a-a062-fa1922dfa9a8", "溫度週期"],
+        txCharacteristic:                           ["6e400002-b5a3-f393-e0a9-e50e24dcca9e", "發送特徵"],
+        rxCharacteristic:                           ["6e400003-b5a3-f393-e0a9-e50e24dcca9e", "接收特徵"],
+        /**
+         * 在所有服務和特徵的UUID中搜索UUID的方法，並返回:
+         * - HTML藍色顯示找到的服務/特徵的名稱。
+         * - 如果未找到UUID，則以HTML紅色顯示消息。
+         * @param uuid 服務或特徵UUID。
+         * @param serviceOrCharacteristic 如果是服務，則為True（或1），如果是特徵，則為false（或0）。
+         */
+        searchUuid(uuid, serviceOrCharacteristic) {
+            for (const key in microbitUuid) {
+                if (uuid === microbitUuid[key][0]) {
+                    return "<font color='blue'>" + microbitUuid[key][1] + "</font>";
+                }
+            }
+            if (serviceOrCharacteristic) {
+                return "<font color='red'>未知的Micro:Bit服務</font>";
+            } else {
+                return "<font color='red'>未知的Micro:Bit特徵</font>";
+            }
+        },
+    };
+
+    var bluetoothDevice;
+    var txCharacteristic;
+    var rxCharacteristic;
+    var lightState = 0;
+    var airconState = 0;
+    
+    // 狀態追蹤
+    var pendingStates = {
+        lightsensor: true,
+        aircon: true,
+        lightcontrol: true
+    };
+    
+    var statesData = {
+        lightsensor: "Unknown",
+        aircon: "Unknow",
+        lightcontrol: "Unknown"
+    };
+    
+    // 刷新中標記
+    var refreshingStates = false;
+
     /**
-     * Characteristics
+     * 將字符串添加到日誌的函數。如果newLine為true，則在字符串末尾添加新行。
+     * @param string 要打印到日誌的字符串。
+     * @param newLine 指定是否開始新行的布爾值。
      */
-    deviceName:                                 ["00002a00-0000-1000-8000-00805f9b34fb", "Device Name"],
-    appearance:                                 ["00002a01-0000-1000-8000-00805f9b34fb", "Appearance"],
-    peripheralPreferredConnectionParameters:    ["00002a04-0000-1000-8000-00805f9b34fb", "Peripheral Preferred Connection Parameters"],
-    serviceChanged:                             ["00002a05-0000-1000-8000-00805f9b34fb", "Service Changed"],
-    modelNumberString:                          ["00002a24-0000-1000-8000-00805f9b34fb", "Model Number String"],
-    serialNumberString:                         ["00002a25-0000-1000-8000-00805f9b34fb", "Serial Number String"],
-    hardwareRevisionString:                     ["00002a27-0000-1000-8000-00805f9b34fb", "Hardware Revision String"],
-    firmwareRevisionString:                     ["00002a26-0000-1000-8000-00805f9b34fb", "Firmware Revision String"],
-    manufacturerNameString:                     ["00002a29-0000-1000-8000-00805f9b34fb", "Manufacturer Name String"],
-    accelerometerData:                          ["e95dca4b-251d-470a-a062-fa1922dfa9a8", "Accelerometer Data"],
-    accelerometerPeriod:                        ["e95dfb24-251d-470a-a062-fa1922dfa9a8", "Accelerometer Period"],
-    magnetometerData:                           ["e95dfb11-251d-470a-a062-fa1922dfa9a8", "Magnetometer Data"],
-    magnetometerPeriod:                         ["e95d386c-251d-470a-a062-fa1922dfa9a8", "Magnetometer Period"],
-    magnetometerBearing:                        ["e95d9715-251d-470a-a062-fa1922dfa9a8", "Magnetometer Bearing"],
-    magnetometerCalibration:                    ["e95db358-251d-470a-a062-fa1922dfa9a8", "Magnetometer Calibration"],
-    buttonAState:                               ["e95dda90-251d-470a-a062-fa1922dfa9a8", "Button A State"],
-    buttonBState:                               ["e95dda91-251d-470a-a062-fa1922dfa9a8", "Button B State"],
-    pinData:                                    ["e95d8d00-251d-470a-a062-fa1922dfa9a8", "Pin Data"],
-    pinADConfiguration:                         ["e95d5899-251d-470a-a062-fa1922dfa9a8", "Pin AD Configuration"],
-    pinIOConfiguration:                         ["e95db9fe-251d-470a-a062-fa1922dfa9a8", "Pin IO Configuration"],
-    pwmControl:                                 ["e95dd822-251d-470a-a062-fa1922dfa9a8", "PWM Control"],
-    ledMatrixState:                             ["e95d7b77-251d-470a-a062-fa1922dfa9a8", "LED Matrix State"],
-    ledText:                                    ["e95d93ee-251d-470a-a062-fa1922dfa9a8", "LED Text"],
-    scrollingDelay:                             ["e95d0d2d-251d-470a-a062-fa1922dfa9a8", "Scrolling Delay"],
-    microbitRequirements:                       ["e95db84c-251d-470a-a062-fa1922dfa9a8", "MicroBit Requirements"],
-    microbitEvent:                              ["e95d9775-251d-470a-a062-fa1922dfa9a8", "MicroBit Event"],
-    clientRequirements:                         ["e95d23c4-251d-470a-a062-fa1922dfa9a8", "Client Requirements"],
-    clientEvent:                                ["e95d5404-251d-470a-a062-fa1922dfa9a8", "Client Event"],
-    dfuControl:                                 ["e95d93b1-251d-470a-a062-fa1922dfa9a8", "DFU Control"],
-    temperature:                                ["e95d9250-251d-470a-a062-fa1922dfa9a8", "Temperature"],
-    temperaturePeriod:                          ["e95d1b25-251d-470a-a062-fa1922dfa9a8", "Temperature Period"],
-    txCharacteristic:                           ["6e400002-b5a3-f393-e0a9-e50e24dcca9e", "Tx Characteristic"],
-    rxCharacteristic:                           ["6e400003-b5a3-f393-e0a9-e50e24dcca9e", "Rx Characteristic"],
+    function addLog(string, newLine) {
+        document.getElementById("log").innerHTML += string;
+        if (newLine) {
+            document.getElementById("log").innerHTML += "<br>";
+        }
+    }
+
     /**
-     * Method that searches an UUID among the UUIDs of all the services and
-     * characteristics and returns:
-     * - in HTML blue color the name of the service/characteristic found.
-     * - in HTML red color a message if the UUID has not been found.
-     * @param uuid The service or characteristic UUID.
-     * @param serviceOrCharacteristic True (or 1) if it is a service, and false
-     * (or 0) if it is a characteristic.
+     * 以粗體和紅色將字符串（和換行符）添加到日誌的函數。
+     * @param string 要打印到日誌的字符串。
      */
-    searchUuid(uuid, serviceOrCharacteristic) {
-        for (const key in microbitUuid) {
-            if (uuid === microbitUuid[key][0]) {
-                return "<font color='blue'>" + microbitUuid[key][1] + "</font>";
+    function addLogError(string) {
+        addLog("<b><font color='red'>" + string + "</font></b>", true);
+    }
+
+    /**
+     * 清空日誌的函數。
+     */
+    function clearLog() {
+        document.getElementById("log").innerHTML = "";
+    }
+
+    /**
+     * 清空UART TX字段的函數。
+     */
+    function clearTx() {
+        document.getElementById("tx").innerHTML = "";
+    }
+
+    /**
+     * 斷開連接時將背景顏色變為紅色的函數。
+     */
+    function onDisconnected() {
+        document.getElementById("body").style.backgroundColor = "#FFD0D0";
+        addLog("Hub DISCONNECTED.", true);
+        
+        // 重置狀態
+        resetStates();
+    }
+    
+    /**
+     * 重置所有狀態
+     */
+    function resetStates() {
+        pendingStates = {
+            lightsensor: true,
+            aircon: true,
+            lightcontrol: true
+        };
+        
+        statesData = {
+            lightsensor: "Unknown",
+            aircon: "Unknown",
+            lightcontrol: "Unknown"
+        };
+        
+        document.getElementById("status_lightsensor_text").innerHTML = "Light Status：Unknown";
+        document.getElementById("status_lightsensor_text").className = "status-pending";
+        document.getElementById("status_aircon_text").innerHTML = "AC：Unknown";
+        document.getElementById("status_aircon_text").className = "status-pending";
+        document.getElementById("status_lightcontrol_text").innerHTML = "Light：Unknown";
+        document.getElementById("status_lightcontrol_text").className = "status-pending";
+        document.getElementById("status_loading").innerHTML = "";
+        refreshingStates = false;
+    }
+
+    /**
+     * 根據UART特徵更新HTML元素的函數。
+     */
+    function readTx(event) {
+        let enc = new TextDecoder("utf-8");
+        let value = enc.decode(event.target.value);
+        document.getElementById("tx").innerHTML += value + "<br>";
+        
+        // 處理狀態更新響應
+        let match;
+        
+        // 檢查光度感應器數據
+        if ((match = value.match(/lightsensor:\s*(\d+)/))) {
+            const sensorValue = match[1];
+            statesData.lightsensor = sensorValue;
+            pendingStates.lightsensor = false;
+            updateDisplay();
+        } 
+        // 檢查冷氣機數據
+        else if ((match = value.match(/aircon:\s*(\d+)/))) {
+            const airconValue = match[1];
+            statesData.aircon = airconValue;
+            pendingStates.aircon = false;
+            updateDisplay();
+        } 
+        // 檢查燈控制數據
+        else if ((match = value.match(/lightcontrol:\s*(\d+)/))) {
+            const lightValue = match[1];
+            statesData.lightcontrol = lightValue;
+            pendingStates.lightcontrol = false;
+            updateDisplay();
+        }
+    }
+    
+    /**
+     * 更新顯示，僅在所有數據均已收到時顯示完整狀態
+     */
+    function updateDisplay() {
+        // 檢查是否正在刷新狀態和所有數據是否都已接收
+        if (refreshingStates) {
+            const allReceived = !pendingStates.lightsensor && 
+                               !pendingStates.aircon && 
+                               !pendingStates.lightcontrol;
+            
+            if (allReceived) {
+                // 所有數據已接收，更新顯示
+                document.getElementById("status_loading").innerHTML = "(Done)";
+                setTimeout(() => {
+                    document.getElementById("status_loading").innerHTML = "";
+                }, 2000);
+                
+                // 更新光度檢測器
+                document.getElementById("status_lightsensor_text").innerHTML = `Light Sensor：${statesData.lightsensor}`;
+                document.getElementById("status_lightsensor_text").className = "status-complete";
+                
+                // 更新冷氣機
+                const airconStatus = parseInt(statesData.aircon) === 1 ? "On" :"Off";
+                document.getElementById("status_aircon_text").innerHTML = `AC：${airconStatus}`;
+                document.getElementById("status_aircon_text").className = "status-complete";
+                
+                // 更新燈
+                const lightStatus = parseInt(statesData.lightcontrol) === 1 ? "On" : "Off";
+                document.getElementById("status_lightcontrol_text").innerHTML = `Light：${lightStatus}`;
+                document.getElementById("status_lightcontrol_text").className = "status-complete";
+                
+                refreshingStates = false;
+                addLog("All status data refresed.", true);
             }
         }
-        if (serviceOrCharacteristic) {
-            return "<font color='red'>Unknown Micro:Bit Service</font>";
+    }
+
+    /**
+     * 設置RX文本輸入為特定命令。
+     * @param {string} command - 要在RX輸入框中設置的命令。
+     */
+    function setRxText(command) {
+        document.getElementById("rxText").value = command;
+    }
+
+    /**
+     * 使用相應的micro:bit藍牙特徵更新RX的函數。
+     */
+    function writeRx() {
+        addLog("正在寫入RX... ", false);
+        if (!bluetoothDevice) {
+            addLogError("沒有連接設備。");
         } else {
-            return "<font color='red'>Unknown Micro:Bit Characteristic</font>";
-        }
-    },
-}
-
-
-
-/**
- * Function that adds string to the log. If newLine is true, it adds a new line
- * at the end of the string.
- * @param string String to print to the log.
- * @param newLine Boolean that specifies whether to start a new line or not.
- */
-function addLog(string, newLine) {
-    document.getElementById("log").innerHTML += string;
-    if (newLine) {
-        document.getElementById("log").innerHTML += "<br>";
-    };
-}
-
-/**
- * Function that adds string (and newline) to the log in bold and red color.
- * @param string String to print to the log.
- */
-function addLogError(string) {
-    addLog("<b><font color='red'>" + string + "</font></b>", true);
-}
-
-/**
- * Function that empties the log.
- */
-function clearLog() {
-    document.getElementById("log").innerHTML = "";
-}
-
-/**
- * Function that empties the UART TX field.
- */
-function clearTx() {
-    document.getElementById("tx").innerHTML = "";
-}
-
-
-
-/**
- * Function that turns the background color red.
- */
-function onDisconnected() {
-    document.getElementById("body").style = "background-color:#FFD0D0";
-}
-
-
-
-var txCharacteristic;
-var rxCharacteristic;
-
-/**
- * Function that updates the HTML element according to the UART characteristic.
- */
-function readTx(event) {
-    //addLog("Reading TX... ", false);
-    if (!("TextDecoder") in window) {
-        addLogError("Sorry, this browser does not support TextDecoder...");
-    } else {
-        let enc = new TextDecoder("utf-8");
-        document.getElementById("tx").innerHTML += enc.decode(event.target.value) + "<br>";
-        //addLog("<font color='green'>OK</font>", true);
-    };
-}
-
-/**
- * Function that updates the RX using the corresponding micro:bit Bluetooth
- * characteristic.
- */
-function writeRx() {
-    addLog("Writing RX... ", false);
-    if (!bluetoothDevice) {
-        addLogError("There is no device connected.");
-    } else {
-        if (bluetoothDevice.gatt.connected) {
-            if (!rxCharacteristic) {
-                addLogError("There is no RX characteristic.");
-            } else {
-                if (!("TextEncoder" in window)) {
-                    addLogError("Sorry, this browser does not support TextEncoder...");
+            if (bluetoothDevice.gatt.connected) {
+                if (!rxCharacteristic) {
+                    addLogError("沒有RX特徵。");
                 } else {
-                    let enc = new TextEncoder();
-                    rxCharacteristic.writeValue(enc.encode(document.getElementById("rxText").value + '\n'))
-                    .then(_ => {
-                        addLog("<font color='green'>OK</font>", true);
-                    })
-                    .catch(error => {
-                        addLogError(error);
-                    });
-                };
-            };
-        } else {
-            addLogError("There is no device connected.");
-        };
-    };
-}
+                    if (!("TextEncoder" in window)) {
+                        addLogError("Sorry, this browser does not support TextEncoder... 抱歉，此瀏覽器不支持TextEncoder...");
+                    } else {
+                        let enc = new TextEncoder();
+                        rxCharacteristic.writeValue(enc.encode(document.getElementById("rxText").value + '\n'))
+                        .then(_ => {
+                            addLog("<font color='green'>成功</font>", true);
+                        })
+                        .catch(error => {
+                            addLogError(error);
+                        });
+                    }
+                }
+            } else {
+                addLogError("No device connected. 沒有連接設備。");
+            }
+        }
+    }
 
-/**
- * Function that connects to a Bluetooth device, and saves the characteristics
- * associated with the UART service.
- */
-function connect() {
-    addLog("Requesting micro:bit Bluetooth devices... ", false);
-    if (!navigator.bluetooth) {
-        addErrorLog("Bluetooth not available in this browser or computer.");
-    } else {
+    /**
+     * 刷新所有傳感器和控制的狀態
+     */
+    function refreshStates() {
+        addLog("Refreshing all status... 正在刷新所有狀態...", true);
+        
+        // 重置狀態追蹤
+        pendingStates = {
+            lightsensor: true,
+            aircon: true,
+            lightcontrol: true
+        };
+        
+        // 設置刷新標記
+        refreshingStates = true;
+        
+        // 顯示加載指示器
+        document.getElementById("status_loading").innerHTML = "（Loading... 正在加載...）";
+        document.getElementById("status_lightsensor_text").className = "status-pending";
+        document.getElementById("status_aircon_text").className = "status-pending";
+        document.getElementById("status_lightcontrol_text").className = "status-pending";
+        
+        // 為防止請求淹沒設備，我們在每個請求之間設置一個微小的延遲
+        setTimeout(() => getState('lightsensor'), 0);
+        setTimeout(() => getState('aircon'), 300);
+        setTimeout(() => getState('lightcontrol'), 600);
+    }
+
+    /**
+     * 獲取特定傳感器或控制的狀態
+     * @param {string} what - 要獲取狀態的傳感器或控制
+     */
+    function getState(what) {
+        if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
+            addLogError("沒有連接設備。");
+            return;
+        }
+        if (!rxCharacteristic) {
+            addLogError("沒有RX特徵。");
+            return;
+        }
+
+        let enc = new TextEncoder();
+        rxCharacteristic.writeValue(enc.encode(`GET ${what}\n`))
+            .then(_ => {
+                // 我們不需要在這裡更新UI，因為響應將由readTx處理
+                addLog(`已請求${what}的狀態`, true);
+            })
+            .catch(error => {
+                addLogError(error);
+            });
+    }
+
+    /**
+     * 連接到藍牙設備並保存與UART服務關聯的特徵的函數。
+     */
+    function connect() {
+        addLog("Requesting micro:bit Bluetooth device... 正在請求micro:bit藍牙設備... ", false);
+        if (!navigator.bluetooth) {
+            addLogError("This browser or computer does not support Bluetooth. 此瀏覽器或計算機不支持藍牙。");
+            return;
+        }
+        
         navigator.bluetooth.requestDevice({
-            // To accept all devices, use acceptAllDevices: true and remove filters.
             filters: [{namePrefix: "BBC micro:bit"}],
-            optionalServices: [microbitUuid.genericAccess[0], microbitUuid.genericAttribute[0], microbitUuid.deviceInformation[0], microbitUuid.accelerometerService[0], microbitUuid.magnetometerService[0], microbitUuid.buttonService[0], microbitUuid.ioPinService[0], microbitUuid.ledService[0], microbitUuid.eventService[0], microbitUuid.dfuControlService[0], microbitUuid.temperatureService[0], microbitUuid.uartService[0]],
+            optionalServices: [microbitUuid.uartService[0]]
         })
         .then(device => {
-            addLog("<font color='green'>OK</font>", true);
+            addLog("<font color='green'>成功</font>", true);
             bluetoothDevice = device;
-            addLog("Connecting to GATT server (name: <font color='blue'>" + device.name + "</font>, ID: <font color='blue'>" + device.id + "</font>)... ", false);
+            addLog("正在連接到GATT服務器（名稱: <font color='blue'>" + device.name + "</font>, ID: <font color='blue'>" + device.id + "</font>)... ", false);
             device.addEventListener('gattserverdisconnected', onDisconnected);
-            document.getElementById("body").style = "background-color:#D0FFD0";
+            document.getElementById("body").style.backgroundColor = "#D0FFD0";
             return device.gatt.connect();
         })
         .then(server => {
-            addLog("<font color='green'>OK</font>", true);
-            addLog("Getting UART service (UUID: " + microbitUuid.uartService[0] + ")... ", false);
+            addLog("<font color='green'>成功</font>", true);
+            addLog("正在獲取UART服務... ", false);
             return server.getPrimaryService(microbitUuid.uartService[0]);
         })
         .then(service => {
-            addLog("<font color='green'>OK</font>", true);
-            addLog("Getting TX characteristic... ", false);
+            addLog("<font color='green'>成功</font>", true);
+            
+            // 獲取TX特徵
+            addLog("正在獲取TX特徵... ", false);
             service.getCharacteristic(microbitUuid.txCharacteristic[0])
             .then(txChar => {
-                addLog("<font color='green'>OK</font>", true);
+                addLog("<font color='green'>成功</font>", true);
                 txCharacteristic = txChar;
-                addLog("Starting TX notifications... ", false);
+                addLog("正在啟動TX通知... ", false);
                 return txChar.startNotifications()
                 .then(_ => {
                     txChar.addEventListener('characteristicvaluechanged', readTx);
-                    addLog("<font color='green'>OK</font>", true);
-                    addLog("Getting RX characteristic... ", false);
+                    addLog("<font color='green'>成功</font>", true);
+                    
+                    // 獲取RX特徵
+                    addLog("正在獲取RX特徵... ", false);
                     service.getCharacteristic(microbitUuid.rxCharacteristic[0])
                     .then(rxChar => {
                         rxCharacteristic = rxChar;
-                        addLog("<font color='green'>OK</font>", true);
+                        addLog("<font color='green'>成功</font>", true);
+                        
+                        // 連接後刷新狀態
+                        setTimeout(refreshStates, 1000);
                     })
                     .catch(error => {
-                        addErrorLog(error);
+                        addLogError(error);
                     });
                 })
                 .catch(error => {
@@ -286,86 +469,26 @@ function connect() {
         .catch(error => {
             addLogError(error);
         });
-    };
-}
+    }
 
-/**
- * Function that disconnects from the Bluetooth device (if connected).
- */
-function disconnect() {
-    addLog("Disconnecting... ", false);
-    if (!bluetoothDevice) {
-        addLogError("There is no device connected.");
-    } else {
-        if (bluetoothDevice.gatt.connected) {
-            bluetoothDevice.gatt.disconnect();
-            if (!bluetoothDevice.gatt.connected) {
-                addLog("<font color='green'>OK</font>", true);
-            }
+    /**
+     * 斷開與藍牙設備的連接的函數（如果已連接）。
+     */
+    function disconnect() {
+        addLog("正在斷開連接... ", false);
+        if (!bluetoothDevice) {
+            addLogError("沒有連接設備。");
         } else {
-            addLogError("There is no device connected.");
-        };
-    };
-}
-let lightState = 0;
-let airconState = 0;
-
-function sendAirconToggle() {
-    airconState = airconState ? 0 : 1;
-    writeRxCommand(`SET aircon ${airconState}`);
-    refreshStates(); // always show latest states
-}
-
-function sendLightToggle() {
-    lightState = lightState ? 0 : 1;
-    writeRxCommand(`SET light ${lightState}`);
-    refreshStates(); // always show latest states
-}
-
-function refreshStates() {
-    getAndShowState('aircon');
-    getAndShowState('lightsensor');
-    getAndShowState('lightcontrol');
-}
-
-function getAndShowState(what) {
-    if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
-        addLogError("No device connected.");
-        return;
-    }
-    if (!rxCharacteristic) {
-        addLogError("No RX characteristic.");
-        return;
-    }
-
-    let enc = new TextEncoder();
-    rxCharacteristic.writeValue(enc.encode(`GET ${what}\n`))
-        .then(_ => {
-            // Show fetching state (Optional)
-            document.getElementById(`status_${what}`).innerHTML = 'Fetching...';
-        })
-        .catch(error => {
-            addLogError(error);
-        });
-}
-
-// This listens for replies (GET responses)
-function handleNotifications(event) {
-    let value = new TextDecoder().decode(event.target.value);
-    addLog("Received: " + value, true);
-
-    // Auto-display each GET value
-    if (value.startsWith("aircon:")) {
-        document.getElementById("status_aircon").innerHTML = value;
-    } else if (value.startsWith("lightsensor:")) {
-        document.getElementById("status_lightsensor").innerHTML = value;
-    } else if (value.startsWith("lightcontrol:")) {
-        document.getElementById("status_lightcontrol").innerHTML = value;
-    }
-}
-
-</script>
-
+            if (bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+                if (!bluetoothDevice.gatt.connected) {
+                    addLog("<font color='green'>成功</font>", true);
+                }
+            } else {
+                addLogError("沒有連接設備。");
+            }
+        }
+    }
+    </script>
 </body>
 </html>
-
