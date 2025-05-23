@@ -27,7 +27,7 @@
 </head>
 <body id="body">
 
-    <h1>Smart Home Control  Panel 🎛</h1>
+    <h1>Smart Home Control Panel</h1>
     <p>
         Welcome back, please connect your hub first.
     </p>
@@ -250,22 +250,20 @@
         // 處理狀態更新響應
         let match;
         
-        // 檢查光度感應器數據
-        if ((match = value.match(/lightsensor:\s*(\d+)/))) {
+        // 兼容两种格式：冒号和等号
+        if ((match = value.match(/lightsensor[=:](\d+)/))) {
             const sensorValue = match[1];
             statesData.lightsensor = sensorValue;
             pendingStates.lightsensor = false;
             updateDisplay();
         } 
-        // 檢查冷氣機數據
-        else if ((match = value.match(/aircon:\s*(\d+)/))) {
+        else if ((match = value.match(/aircon[=:](\d+)/))) {
             const airconValue = match[1];
             statesData.aircon = airconValue;
             pendingStates.aircon = false;
             updateDisplay();
         } 
-        // 檢查燈控制數據
-        else if ((match = value.match(/lightcontrol:\s*(\d+)/))) {
+        else if ((match = value.match(/lightcontrol[=:](\d+)/))) {
             const lightValue = match[1];
             statesData.lightcontrol = lightValue;
             pendingStates.lightcontrol = false;
@@ -291,17 +289,17 @@
                 }, 2000);
                 
                 // 更新光度檢測器
-                document.getElementById("status_lightsensor_text").innerHTML = `Light Sensor：${statesData.lightsensor}`;
+                document.getElementById("status_lightsensor_text").innerHTML = Light Sensor：${statesData.lightsensor};
                 document.getElementById("status_lightsensor_text").className = "status-complete";
                 
                 // 更新冷氣機
                 const airconStatus = parseInt(statesData.aircon) === 1 ? "On" :"Off";
-                document.getElementById("status_aircon_text").innerHTML = `AC：${airconStatus}`;
+                document.getElementById("status_aircon_text").innerHTML = AC：${airconStatus};
                 document.getElementById("status_aircon_text").className = "status-complete";
                 
                 // 更新燈
                 const lightStatus = parseInt(statesData.lightcontrol) === 1 ? "On" : "Off";
-                document.getElementById("status_lightcontrol_text").innerHTML = `Light：${lightStatus}`;
+                document.getElementById("status_lightcontrol_text").innerHTML = Light：${lightStatus};
                 document.getElementById("status_lightcontrol_text").className = "status-complete";
                 
                 refreshingStates = false;
@@ -392,10 +390,10 @@
         }
 
         let enc = new TextEncoder();
-        rxCharacteristic.writeValue(enc.encode(`GET ${what}\n`))
+        rxCharacteristic.writeValue(enc.encode(GET ${what}\n))
             .then(_ => {
                 // 我們不需要在這裡更新UI，因為響應將由readTx處理
-                addLog(`已請求${what}的狀態`, true);
+                addLog(已請求${what}的狀態, true);
             })
             .catch(error => {
                 addLogError(error);
