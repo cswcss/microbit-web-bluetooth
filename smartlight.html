@@ -39,8 +39,8 @@
     <div id="status_display">
         <h3>HOME STATUS🏡<span id="status_loading" class="loading"></span></h3>
         <p id="status_lightsensor_text" class="status-pending">Light Sensor：Unknown</p>
-        <p id="status_autolighting_text" class="status-pending">AUTO LIGHTING：UNKNOWN</p>
-        <p id="status_lightcontrol_text" class="status-pending">LIGHT：UNKNOWN</p>
+        <p id="status_autolighting_text" class="status-pending">AUTO LIGHTING：Unknown</p>
+        <p id="status_lightcontrol_text" class="status-pending">LIGHT：Unknown</p>
     </div>
 
     <p>Light 💡</p>
@@ -48,10 +48,10 @@
     <button onclick="setRxText('SET lightcontrol 1')">TURN ON🔛</button>
     <button onclick="setRxText('SET lightcontrol 0')">TURN OFF 📴</button>
     </p>
-  
+    
     <p>Auto Lighting 💡</p>
     <p>
-    <button onclick="setRxText('SET autolight')">TURN ON🔛</button>
+    <button onclick="setRxText('SET AUTOLIGHT')">TURN ON🔛</button> 
     </p>
     
     <h2>Transmitting Area</h2>
@@ -133,7 +133,7 @@
         searchUuid(uuid, serviceOrCharacteristic) {
             for (const key in microbitUuid) {
                 if (uuid === microbitUuid[key][0]) {
-                    return "<font color='blue'>" + microbitUuid[key][1] + "</font>";
+                    return `<font color='blue'>${microbitUuid[key][1]}</font>`;
                 }
             }
             if (serviceOrCharacteristic) {
@@ -147,8 +147,6 @@
     var bluetoothDevice;
     var txCharacteristic;
     var rxCharacteristic;
-    // var lightState = 0; // These seem unused, can be removed if not needed later
-    // var autolightingState = 0; // These seem unused, can be removed if not needed later
     
     // 狀態追蹤
     var pendingStates = {
@@ -159,18 +157,13 @@
     
     var statesData = {
         lightsensor: "Unknown",
-        autolighting: "Unknown", // Corrected typo from "Unknow" to "Unknown"
+        autolighting: "Unknown", 
         lightcontrol: "Unknown"
     };
     
     // 刷新中標記
     var refreshingStates = false;
 
-    /**
-     * 將字符串添加到日誌的函數。如果newLine為true，則在字符串末尾添加新行。
-     * @param string 要打印到日誌的字符串。
-     * @param newLine 指定是否開始新行的布爾值。
-     */
     function addLog(string, newLine) {
         document.getElementById("log").innerHTML += string;
         if (newLine) {
@@ -178,42 +171,24 @@
         }
     }
 
-    /**
-     * 以粗體和紅色將字符串（和換行符）添加到日誌的函數。
-     * @param string 要打印到日誌的字符串。
-     */
     function addLogError(string) {
-        addLog("<b><font color='red'>" + string + "</font></b>", true);
+        addLog(`<b><font color='red'>${string}</font></b>`, true);
     }
 
-    /**
-     * 清空日誌的函數。
-     */
     function clearLog() {
         document.getElementById("log").innerHTML = "";
     }
 
-    /**
-     * 清空UART TX字段的函數。
-     */
     function clearTx() {
         document.getElementById("tx").innerHTML = "";
     }
 
-    /**
-     * 斷開連接時將背景顏色變為紅色的函數。
-     */
     function onDisconnected() {
         document.getElementById("body").style.backgroundColor = "#FFD0D0";
         addLog("Hub DISCONNECTED.", true);
-        
-        // 重置狀態
         resetStates();
     }
     
-    /**
-     * 重置所有狀態
-     */
     function resetStates() {
         pendingStates = {
             lightsensor: true,
@@ -227,185 +202,151 @@
             lightcontrol: "Unknown"
         };
         
-        document.getElementById("status_lightsensor_text").innerHTML = "Light Sensor：Unknown"; // Corrected display string
+        document.getElementById("status_lightsensor_text").innerHTML = "Light Sensor：Unknown";
         document.getElementById("status_lightsensor_text").className = "status-pending";
-        document.getElementById("status_autolighting_text").innerHTML = "AC：Unknown";
+        // **** FIXED LABEL CONSISTENCY ****
+        document.getElementById("status_autolighting_text").innerHTML = "AUTO LIGHTING：Unknown"; 
         document.getElementById("status_autolighting_text").className = "status-pending";
-        document.getElementById("status_lightcontrol_text").innerHTML = "LIGHT：Unknown"; // Consistent with other display strings
+        document.getElementById("status_lightcontrol_text").innerHTML = "LIGHT：Unknown"; 
         document.getElementById("status_lightcontrol_text").className = "status-pending";
         document.getElementById("status_loading").innerHTML = "";
         refreshingStates = false;
     }
 
-    /**
-     * 根據UART特徵更新HTML元素的函數。
-     */
     function readTx(event) {
         let enc = new TextDecoder("utf-8");
         let value = enc.decode(event.target.value);
         document.getElementById("tx").innerHTML += value + "<br>";
         
-        // 處理狀態更新響應
         let match;
         
-        // 兼容两种格式：冒号和等号
-        if ((match = value.match(/lightsensor[=:](\d+)/))) {
-            const sensorValue = match[1];
-            statesData.lightsensor = sensorValue;
+        if ((match = value.match(/lightsensor[=:](\d+)/i))) { // Added i for case-insensitivity if microbit varies
+            statesData.lightsensor = match[1];
             pendingStates.lightsensor = false;
             updateDisplay();
         } 
-        else if ((match = value.match(/autolighting[=:](\d+)/))) {
-            const autolightingValue = match[1];
-            statesData.autolighting = autolightingValue;
+        else if ((match = value.match(/autolighting[=:](\d+)/i))) {
+            statesData.autolighting = match[1];
             pendingStates.autolighting = false;
             updateDisplay();
         } 
-        else if ((match = value.match(/lightcontrol[=:](\d+)/))) {
-            const lightValue = match[1];
-            statesData.lightcontrol = lightValue;
+        else if ((match = value.match(/lightcontrol[=:](\d+)/i))) {
+            statesData.lightcontrol = match[1];
             pendingStates.lightcontrol = false;
             updateDisplay();
         }
     }
     
-    /**
-     * 更新顯示，僅在所有數據均已收到時顯示完整狀態
-     */
     function updateDisplay() {
-        // 檢查是否正在刷新狀態和所有數據是否都已接收
         if (refreshingStates) {
             const allReceived = !pendingStates.lightsensor && 
-                                !pendingStates.autolighting && 
-                                !pendingStates.lightcontrol;
+                                  !pendingStates.autolighting && 
+                                  !pendingStates.lightcontrol;
             
             if (allReceived) {
-                // 所有數據已接收，更新顯示
                 document.getElementById("status_loading").innerHTML = "(Done)";
                 setTimeout(() => {
                     document.getElementById("status_loading").innerHTML = "";
                 }, 2000);
                 
-                // 更新光度檢測器
-                // **FIXED HERE: Use template literals with backticks ``**
                 document.getElementById("status_lightsensor_text").innerHTML = `Light Sensor：${statesData.lightsensor}`;
                 document.getElementById("status_lightsensor_text").className = "status-complete";
                 
-                // 更新冷氣機
-                const autolightingStatus = parseInt(statesData.autolighting) === 1 ? "On" :"Off";
-                // **FIXED HERE: Use template literals with backticks ``**
+                const autolightingStatus = parseInt(statesData.autolighting) === 0 ? "On" :"Off"; // Assuming 0 is ON for autolighting (mancontrol=0)
                 document.getElementById("status_autolighting_text").innerHTML = `Auto Lighting：${autolightingStatus}`;
                 document.getElementById("status_autolighting_text").className = "status-complete";
                 
-                // 更新燈
                 const lightStatus = parseInt(statesData.lightcontrol) === 1 ? "On" : "Off";
-                // **FIXED HERE: Use template literals with backticks ``**
                 document.getElementById("status_lightcontrol_text").innerHTML = `LIGHT：${lightStatus}`;
                 document.getElementById("status_lightcontrol_text").className = "status-complete";
                 
                 refreshingStates = false;
-                addLog("All status data refreshed.", true); // Corrected typo from "refresed"
+                addLog("All status data refreshed.", true);
             }
         }
     }
 
-    /**
-     * 設置RX文本輸入為特定命令。
-     * @param {string} command - 要在RX輸入框中設置的命令。
-     */
     function setRxText(command) {
         document.getElementById("rxText").value = command;
     }
 
-    /**
-     * 使用相應的micro:bit藍牙特徵更新RX的函數。
-     */
     function writeRx() {
         addLog("正在寫入RX... ", false);
         if (!bluetoothDevice) {
             addLogError("沒有連接設備。");
-        } else {
-            if (bluetoothDevice.gatt.connected) {
-                if (!rxCharacteristic) {
-                    addLogError("沒有RX特徵。");
-                } else {
-                    if (!("TextEncoder" in window)) {
-                        addLogError("Sorry, this browser does not support TextEncoder... 抱歉，此瀏覽器不支持TextEncoder...");
-                    } else {
-                        let enc = new TextEncoder();
-                        rxCharacteristic.writeValue(enc.encode(document.getElementById("rxText").value + '\n'))
-                        .then(_ => {
-                            addLog("<font color='green'>成功</font>", true);
-                        })
-                        .catch(error => {
-                            addLogError(error);
-                        });
-                    }
-                }
-            } else {
-                addLogError("No device connected. 沒有連接設備。");
-            }
+            return;
         }
-    }
-
-    /**
-     * 刷新所有傳感器和控制的狀態
-     */
-    function refreshStates() {
-        addLog("Refreshing all status... 正在刷新所有狀態...", true);
-        
-        // 重置狀態追蹤
-        pendingStates = {
-            lightsensor: true,
-            autolighting: true,
-            lightcontrol: true
-        };
-        
-        // 設置刷新標記
-        refreshingStates = true;
-        
-        // 顯示加載指示器
-        document.getElementById("status_loading").innerHTML = "（Loading... 正在加載...）";
-        document.getElementById("status_lightsensor_text").className = "status-pending";
-        document.getElementById("status_autolighting_text").className = "status-pending";
-        document.getElementById("status_lightcontrol_text").className = "status-pending";
-        
-        // 為防止請求淹沒設備，我們在每個請求之間設置一個微小的延遲
-        setTimeout(() => getState('lightsensor'), 0);
-        setTimeout(() => getState('autolighting'), 300);
-        setTimeout(() => getState('lightcontrol'), 600);
-    }
-
-    /**
-     * 獲取特定傳感器或控制的狀態
-     * @param {string} what - 要獲取狀態的傳感器或控制
-     */
-    function getState(what) {
-        if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
-            addLogError("沒有連接設備。");
+        if (!bluetoothDevice.gatt.connected) {
+            addLogError("No device connected. 沒有連接設備。");
             return;
         }
         if (!rxCharacteristic) {
             addLogError("沒有RX特徵。");
             return;
         }
-
+        if (!("TextEncoder" in window)) {
+            addLogError("Sorry, this browser does not support TextEncoder... 抱歉，此瀏覽器不支持TextEncoder...");
+            return;
+        }
+        
         let enc = new TextEncoder();
-        // **FIXED HERE: Use template literals with backticks `` for the command string**
-        rxCharacteristic.writeValue(enc.encode(`GET ${what}\n`)) 
-            .then(_ => {
-                // 我們不需要在這裡更新UI，因為響應將由readTx處理
-                // **FIXED HERE: Use template literals with backticks `` for the log string**
-                addLog(`已請求${what}的狀態`, true); 
-            })
-            .catch(error => {
-                addLogError(error);
-            });
+        rxCharacteristic.writeValue(enc.encode(document.getElementById("rxText").value + '\n'))
+        .then(_ => {
+            addLog("<font color='green'>成功</font>", true);
+        })
+        .catch(error => {
+            addLogError(error);
+        });
     }
 
-    /**
-     * 連接到藍牙設備並保存與UART服務關聯的特徵的函數。
-     */
+    function refreshStates() {
+        addLog("Refreshing all status... 正在刷新所有狀態...", true);
+        
+        pendingStates = {
+            lightsensor: true,
+            autolighting: true,
+            lightcontrol: true
+        };
+        
+        refreshingStates = true;
+        
+        document.getElementById("status_loading").innerHTML = "（Loading... 正在加載...）";
+        document.getElementById("status_lightsensor_text").className = "status-pending";
+        document.getElementById("status_autolighting_text").className = "status-pending";
+        document.getElementById("status_lightcontrol_text").className = "status-pending";
+        
+        setTimeout(() => getState('lightsensor'), 0);
+        setTimeout(() => getState('autolighting'), 300); // Ensure micro:bit handles GET autolighting
+        setTimeout(() => getState('lightcontrol'), 600);
+    }
+
+    function getState(what) {
+        if (!bluetoothDevice || !bluetoothDevice.gatt.connected) {
+            addLogError("沒有連接設備。");
+            refreshingStates = false; // Stop refresh attempt
+            document.getElementById("status_loading").innerHTML = "(Error)";
+            return;
+        }
+        if (!rxCharacteristic) {
+            addLogError("沒有RX特徵。");
+            refreshingStates = false; // Stop refresh attempt
+            document.getElementById("status_loading").innerHTML = "(Error)";
+            return;
+        }
+
+        let enc = new TextEncoder();
+        // Ensure micro:bit expects these exact GET command strings
+        rxCharacteristic.writeValue(enc.encode(`GET ${what}\n`)) 
+        .then(_ => {
+            addLog(`已請求${what}的狀態`, true); 
+        })
+        .catch(error => {
+            addLogError(error);
+            pendingStates[what] = false; // Don't wait for this state indefinitely if send fails
+            updateDisplay(); // Try to update with what we have
+        });
+    }
+
     function connect() {
         addLog("Requesting micro:bit Bluetooth device... 正在請求micro:bit藍牙設備... ", false);
         if (!navigator.bluetooth) {
@@ -420,7 +361,7 @@
         .then(device => {
             addLog("<font color='green'>成功</font>", true);
             bluetoothDevice = device;
-            addLog("正在連接到GATT服務器（名稱: <font color='blue'>" + device.name + "</font>, ID: <font color='blue'>" + device.id + "</font>)... ", false);
+            addLog(`正在連接到GATT服務器（名稱: <font color='blue'>${device.name}</font>, ID: <font color='blue'>${device.id}</font>)... `, false);
             device.addEventListener('gattserverdisconnected', onDisconnected);
             document.getElementById("body").style.backgroundColor = "#D0FFD0";
             return device.gatt.connect();
@@ -433,9 +374,8 @@
         .then(service => {
             addLog("<font color='green'>成功</font>", true);
             
-            // 獲取TX特徵
             addLog("正在獲取TX特徵... ", false);
-            return service.getCharacteristic(microbitUuid.txCharacteristic[0]) // Added return here
+            return service.getCharacteristic(microbitUuid.txCharacteristic[0])
             .then(txChar => {
                 addLog("<font color='green'>成功</font>", true);
                 txCharacteristic = txChar;
@@ -445,41 +385,34 @@
                     txChar.addEventListener('characteristicvaluechanged', readTx);
                     addLog("<font color='green'>成功</font>", true);
                     
-                    // 獲取RX特徵
                     addLog("正在獲取RX特徵... ", false);
-                    return service.getCharacteristic(microbitUuid.rxCharacteristic[0]) // Added return here
+                    return service.getCharacteristic(microbitUuid.rxCharacteristic[0])
                     .then(rxChar => {
                         rxCharacteristic = rxChar;
                         addLog("<font color='green'>成功</font>", true);
                         
-                        // 連接後刷新狀態
-                        setTimeout(refreshStates, 1000);
-                    })
-                    // Removed redundant catch that would be caught by the outer chain
+                        setTimeout(refreshStates, 1000); // Refresh status after successful connection
+                    });
                 });
-            }); // Removed redundant catch that would be caught by the outer chain
+            });
         })
-        .catch(error => { // This single catch will handle errors from the entire promise chain
+        .catch(error => { 
             addLogError(error);
+            document.getElementById("body").style.backgroundColor = "#FFD0D0"; // Revert color on connection error
         });
     }
 
-    /**
-     * 斷開與藍牙設備的連接的函數（如果已連接）。
-     */
     function disconnect() {
         addLog("正在斷開連接... ", false);
         if (!bluetoothDevice) {
             addLogError("沒有連接設備。");
+            return;
+        }
+        if (bluetoothDevice.gatt.connected) {
+            bluetoothDevice.gatt.disconnect();
+            // onDisconnected will handle UI updates
         } else {
-            if (bluetoothDevice.gatt.connected) {
-                bluetoothDevice.gatt.disconnect();
-                // The onDisconnected event listener will handle UI updates and logging
-                // So, we don't need to check bluetoothDevice.gatt.connected immediately here for success message
-                // It will be logged by onDisconnected
-            } else {
-                addLogError("沒有連接設備。");
-            }
+            addLogError("沒有連接設備。");
         }
     }
     </script>
