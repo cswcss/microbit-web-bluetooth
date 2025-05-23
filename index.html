@@ -36,7 +36,6 @@
     <button onclick="disconnect()">Disconnect from hub</button>
 
     <br><br>
-    <!-- Status -->
     <div id="status_display">
         <h3>HOME STATUS🏡<span id="status_loading" class="loading"></span></h3>
         <p id="status_lightsensor_text" class="status-pending">Light Sensor：Unknown</p>
@@ -44,7 +43,6 @@
         <p id="status_lightcontrol_text" class="status-pending">LIGHT：UNKNOWN</p>
     </div>
 
-    <!-- 直接命令按鈕 -->
     <p>Light 💡</p>
     <p>
     <button onclick="setRxText('SET lightcontrol 1')">TURN ON🔛</button>
@@ -77,54 +75,54 @@
         /**
          * 服務
          */
-        genericAccess:                              ["00001800-0000-1000-8000-00805f9b34fb", "一般訪問"],
-        genericAttribute:                           ["00001801-0000-1000-8000-00805f9b34fb", "一般屬性"],
-        deviceInformation:                          ["0000180a-0000-1000-8000-00805f9b34fb", "設備信息"],
-        accelerometerService:                       ["e95d0753-251d-470a-a062-fa1922dfa9a8", "加速度計服務"],
-        magnetometerService:                        ["e95df2d8-251d-470a-a062-fa1922dfa9a8", "磁力計服務"],
-        buttonService:                              ["e95d9882-251d-470a-a062-fa1922dfa9a8", "按鈕服務"],
-        ioPinService:                               ["e95d127b-251d-470a-a062-fa1922dfa9a8", "IO引腳服務"],
-        ledService:                                 ["e95dd91d-251d-470a-a062-fa1922dfa9a8", "LED服務"],
-        eventService:                               ["e95d93af-251d-470a-a062-fa1922dfa9a8", "事件服務"],
-        dfuControlService:                          ["e95d93b0-251d-470a-a062-fa1922dfa9a8", "DFU控制服務"],
-        temperatureService:                         ["e95d6100-251d-470a-a062-fa1922dfa9a8", "溫度服務"],
-        uartService:                                ["6e400001-b5a3-f393-e0a9-e50e24dcca9e", "UART服務"],
+        genericAccess:                             ["00001800-0000-1000-8000-00805f9b34fb", "一般訪問"],
+        genericAttribute:                            ["00001801-0000-1000-8000-00805f9b34fb", "一般屬性"],
+        deviceInformation:                           ["0000180a-0000-1000-8000-00805f9b34fb", "設備信息"],
+        accelerometerService:                        ["e95d0753-251d-470a-a062-fa1922dfa9a8", "加速度計服務"],
+        magnetometerService:                         ["e95df2d8-251d-470a-a062-fa1922dfa9a8", "磁力計服務"],
+        buttonService:                               ["e95d9882-251d-470a-a062-fa1922dfa9a8", "按鈕服務"],
+        ioPinService:                                ["e95d127b-251d-470a-a062-fa1922dfa9a8", "IO引腳服務"],
+        ledService:                                  ["e95dd91d-251d-470a-a062-fa1922dfa9a8", "LED服務"],
+        eventService:                                ["e95d93af-251d-470a-a062-fa1922dfa9a8", "事件服務"],
+        dfuControlService:                           ["e95d93b0-251d-470a-a062-fa1922dfa9a8", "DFU控制服務"],
+        temperatureService:                          ["e95d6100-251d-470a-a062-fa1922dfa9a8", "溫度服務"],
+        uartService:                                 ["6e400001-b5a3-f393-e0a9-e50e24dcca9e", "UART服務"],
         /**
          * 特徵
          */
-        deviceName:                                 ["00002a00-0000-1000-8000-00805f9b34fb", "設備名稱"],
-        appearance:                                 ["00002a01-0000-1000-8000-00805f9b34fb", "外觀"],
-        peripheralPreferredConnectionParameters:    ["00002a04-0000-1000-8000-00805f9b34fb", "外設首選連接參數"],
-        serviceChanged:                             ["00002a05-0000-1000-8000-00805f9b34fb", "服務已更改"],
-        modelNumberString:                          ["00002a24-0000-1000-8000-00805f9b34fb", "型號字符串"],
-        serialNumberString:                         ["00002a25-0000-1000-8000-00805f9b34fb", "序列號字符串"],
-        hardwareRevisionString:                     ["00002a27-0000-1000-8000-00805f9b34fb", "硬件版本字符串"],
-        firmwareRevisionString:                     ["00002a26-0000-1000-8000-00805f9b34fb", "固件版本字符串"],
-        manufacturerNameString:                     ["00002a29-0000-1000-8000-00805f9b34fb", "製造商名稱字符串"],
-        accelerometerData:                          ["e95dca4b-251d-470a-a062-fa1922dfa9a8", "加速度計數據"],
-        accelerometerPeriod:                        ["e95dfb24-251d-470a-a062-fa1922dfa9a8", "加速度計週期"],
-        magnetometerData:                           ["e95dfb11-251d-470a-a062-fa1922dfa9a8", "磁力計數據"],
-        magnetometerPeriod:                         ["e95d386c-251d-470a-a062-fa1922dfa9a8", "磁力計週期"],
-        magnetometerBearing:                        ["e95d9715-251d-470a-a062-fa1922dfa9a8", "磁力計方位"],
-        magnetometerCalibration:                    ["e95db358-251d-470a-a062-fa1922dfa9a8", "磁力計校準"],
-        buttonAState:                               ["e95dda90-251d-470a-a062-fa1922dfa9a8", "按鈕A狀態"],
-        buttonBState:                               ["e95dda91-251d-470a-a062-fa1922dfa9a8", "按鈕B狀態"],
-        pinData:                                    ["e95d8d00-251d-470a-a062-fa1922dfa9a8", "引腳數據"],
-        pinADConfiguration:                         ["e95d5899-251d-470a-a062-fa1922dfa9a8", "引腳AD配置"],
-        pinIOConfiguration:                         ["e95db9fe-251d-470a-a062-fa1922dfa9a8", "引腳IO配置"],
-        pwmControl:                                 ["e95dd822-251d-470a-a062-fa1922dfa9a8", "PWM控制"],
-        ledMatrixState:                             ["e95d7b77-251d-470a-a062-fa1922dfa9a8", "LED矩陣狀態"],
-        ledText:                                    ["e95d93ee-251d-470a-a062-fa1922dfa9a8", "LED文本"],
-        scrollingDelay:                             ["e95d0d2d-251d-470a-a062-fa1922dfa9a8", "滾動延遲"],
-        microbitRequirements:                       ["e95db84c-251d-470a-a062-fa1922dfa9a8", "MicroBit需求"],
-        microbitEvent:                              ["e95d9775-251d-470a-a062-fa1922dfa9a8", "MicroBit事件"],
-        clientRequirements:                         ["e95d23c4-251d-470a-a062-fa1922dfa9a8", "客戶端需求"],
-        clientEvent:                                ["e95d5404-251d-470a-a062-fa1922dfa9a8", "客戶端事件"],
-        dfuControl:                                 ["e95d93b1-251d-470a-a062-fa1922dfa9a8", "DFU控制"],
-        temperature:                                ["e95d9250-251d-470a-a062-fa1922dfa9a8", "溫度"],
-        temperaturePeriod:                          ["e95d1b25-251d-470a-a062-fa1922dfa9a8", "溫度週期"],
-        txCharacteristic:                           ["6e400002-b5a3-f393-e0a9-e50e24dcca9e", "發送特徵"],
-        rxCharacteristic:                           ["6e400003-b5a3-f393-e0a9-e50e24dcca9e", "接收特徵"],
+        deviceName:                                  ["00002a00-0000-1000-8000-00805f9b34fb", "設備名稱"],
+        appearance:                                  ["00002a01-0000-1000-8000-00805f9b34fb", "外觀"],
+        peripheralPreferredConnectionParameters:     ["00002a04-0000-1000-8000-00805f9b34fb", "外設首選連接參數"],
+        serviceChanged:                              ["00002a05-0000-1000-8000-00805f9b34fb", "服務已更改"],
+        modelNumberString:                           ["00002a24-0000-1000-8000-00805f9b34fb", "型號字符串"],
+        serialNumberString:                          ["00002a25-0000-1000-8000-00805f9b34fb", "序列號字符串"],
+        hardwareRevisionString:                      ["00002a27-0000-1000-8000-00805f9b34fb", "硬件版本字符串"],
+        firmwareRevisionString:                      ["00002a26-0000-1000-8000-00805f9b34fb", "固件版本字符串"],
+        manufacturerNameString:                      ["00002a29-0000-1000-8000-00805f9b34fb", "製造商名稱字符串"],
+        accelerometerData:                           ["e95dca4b-251d-470a-a062-fa1922dfa9a8", "加速度計數據"],
+        accelerometerPeriod:                         ["e95dfb24-251d-470a-a062-fa1922dfa9a8", "加速度計週期"],
+        magnetometerData:                            ["e95dfb11-251d-470a-a062-fa1922dfa9a8", "磁力計數據"],
+        magnetometerPeriod:                          ["e95d386c-251d-470a-a062-fa1922dfa9a8", "磁力計週期"],
+        magnetometerBearing:                         ["e95d9715-251d-470a-a062-fa1922dfa9a8", "磁力計方位"],
+        magnetometerCalibration:                     ["e95db358-251d-470a-a062-fa1922dfa9a8", "磁力計校準"],
+        buttonAState:                                ["e95dda90-251d-470a-a062-fa1922dfa9a8", "按鈕A狀態"],
+        buttonBState:                                ["e95dda91-251d-470a-a062-fa1922dfa9a8", "按鈕B狀態"],
+        pinData:                                     ["e95d8d00-251d-470a-a062-fa1922dfa9a8", "引腳數據"],
+        pinADConfiguration:                          ["e95d5899-251d-470a-a062-fa1922dfa9a8", "引腳AD配置"],
+        pinIOConfiguration:                          ["e95db9fe-251d-470a-a062-fa1922dfa9a8", "引腳IO配置"],
+        pwmControl:                                  ["e95dd822-251d-470a-a062-fa1922dfa9a8", "PWM控制"],
+        ledMatrixState:                              ["e95d7b77-251d-470a-a062-fa1922dfa9a8", "LED矩陣狀態"],
+        ledText:                                     ["e95d93ee-251d-470a-a062-fa1922dfa9a8", "LED文本"],
+        scrollingDelay:                              ["e95d0d2d-251d-470a-a062-fa1922dfa9a8", "滾動延遲"],
+        microbitRequirements:                        ["e95db84c-251d-470a-a062-fa1922dfa9a8", "MicroBit需求"],
+        microbitEvent:                               ["e95d9775-251d-470a-a062-fa1922dfa9a8", "MicroBit事件"],
+        clientRequirements:                          ["e95d23c4-251d-470a-a062-fa1922dfa9a8", "客戶端需求"],
+        clientEvent:                                 ["e95d5404-251d-470a-a062-fa1922dfa9a8", "客戶端事件"],
+        dfuControl:                                  ["e95d93b1-251d-470a-a062-fa1922dfa9a8", "DFU控制"],
+        temperature:                                 ["e95d9250-251d-470a-a062-fa1922dfa9a8", "溫度"],
+        temperaturePeriod:                           ["e95d1b25-251d-470a-a062-fa1922dfa9a8", "溫度週期"],
+        txCharacteristic:                            ["6e400002-b5a3-f393-e0a9-e50e24dcca9e", "發送特徵"],
+        rxCharacteristic:                            ["6e400003-b5a3-f393-e0a9-e50e24dcca9e", "接收特徵"],
         /**
          * 在所有服務和特徵的UUID中搜索UUID的方法，並返回:
          * - HTML藍色顯示找到的服務/特徵的名稱。
@@ -149,8 +147,8 @@
     var bluetoothDevice;
     var txCharacteristic;
     var rxCharacteristic;
-    var lightState = 0;
-    var airconState = 0;
+    // var lightState = 0; // These seem unused, can be removed if not needed later
+    // var airconState = 0; // These seem unused, can be removed if not needed later
     
     // 狀態追蹤
     var pendingStates = {
@@ -161,7 +159,7 @@
     
     var statesData = {
         lightsensor: "Unknown",
-        aircon: "Unknow",
+        aircon: "Unknown", // Corrected typo from "Unknow" to "Unknown"
         lightcontrol: "Unknown"
     };
     
@@ -229,11 +227,11 @@
             lightcontrol: "Unknown"
         };
         
-        document.getElementById("status_lightsensor_text").innerHTML = "Light Status：Unknown";
+        document.getElementById("status_lightsensor_text").innerHTML = "Light Sensor：Unknown"; // Corrected display string
         document.getElementById("status_lightsensor_text").className = "status-pending";
         document.getElementById("status_aircon_text").innerHTML = "AC：Unknown";
         document.getElementById("status_aircon_text").className = "status-pending";
-        document.getElementById("status_lightcontrol_text").innerHTML = "Light：Unknown";
+        document.getElementById("status_lightcontrol_text").innerHTML = "LIGHT：Unknown"; // Consistent with other display strings
         document.getElementById("status_lightcontrol_text").className = "status-pending";
         document.getElementById("status_loading").innerHTML = "";
         refreshingStates = false;
@@ -278,8 +276,8 @@
         // 檢查是否正在刷新狀態和所有數據是否都已接收
         if (refreshingStates) {
             const allReceived = !pendingStates.lightsensor && 
-                               !pendingStates.aircon && 
-                               !pendingStates.lightcontrol;
+                                !pendingStates.aircon && 
+                                !pendingStates.lightcontrol;
             
             if (allReceived) {
                 // 所有數據已接收，更新顯示
@@ -289,21 +287,24 @@
                 }, 2000);
                 
                 // 更新光度檢測器
-                document.getElementById("status_lightsensor_text").innerHTML = Light Sensor：${statesData.lightsensor};
+                // **FIXED HERE: Use template literals with backticks ``**
+                document.getElementById("status_lightsensor_text").innerHTML = `Light Sensor：${statesData.lightsensor}`;
                 document.getElementById("status_lightsensor_text").className = "status-complete";
                 
                 // 更新冷氣機
                 const airconStatus = parseInt(statesData.aircon) === 1 ? "On" :"Off";
-                document.getElementById("status_aircon_text").innerHTML = AC：${airconStatus};
+                // **FIXED HERE: Use template literals with backticks ``**
+                document.getElementById("status_aircon_text").innerHTML = `AC：${airconStatus}`;
                 document.getElementById("status_aircon_text").className = "status-complete";
                 
                 // 更新燈
                 const lightStatus = parseInt(statesData.lightcontrol) === 1 ? "On" : "Off";
-                document.getElementById("status_lightcontrol_text").innerHTML = Light：${lightStatus};
+                // **FIXED HERE: Use template literals with backticks ``**
+                document.getElementById("status_lightcontrol_text").innerHTML = `LIGHT：${lightStatus}`;
                 document.getElementById("status_lightcontrol_text").className = "status-complete";
                 
                 refreshingStates = false;
-                addLog("All status data refresed.", true);
+                addLog("All status data refreshed.", true); // Corrected typo from "refresed"
             }
         }
     }
@@ -390,10 +391,12 @@
         }
 
         let enc = new TextEncoder();
-        rxCharacteristic.writeValue(enc.encode(GET ${what}\n))
+        // **FIXED HERE: Use template literals with backticks `` for the command string**
+        rxCharacteristic.writeValue(enc.encode(`GET ${what}\n`)) 
             .then(_ => {
                 // 我們不需要在這裡更新UI，因為響應將由readTx處理
-                addLog(已請求${what}的狀態, true);
+                // **FIXED HERE: Use template literals with backticks `` for the log string**
+                addLog(`已請求${what}的狀態`, true); 
             })
             .catch(error => {
                 addLogError(error);
@@ -432,7 +435,7 @@
             
             // 獲取TX特徵
             addLog("正在獲取TX特徵... ", false);
-            service.getCharacteristic(microbitUuid.txCharacteristic[0])
+            return service.getCharacteristic(microbitUuid.txCharacteristic[0]) // Added return here
             .then(txChar => {
                 addLog("<font color='green'>成功</font>", true);
                 txCharacteristic = txChar;
@@ -444,7 +447,7 @@
                     
                     // 獲取RX特徵
                     addLog("正在獲取RX特徵... ", false);
-                    service.getCharacteristic(microbitUuid.rxCharacteristic[0])
+                    return service.getCharacteristic(microbitUuid.rxCharacteristic[0]) // Added return here
                     .then(rxChar => {
                         rxCharacteristic = rxChar;
                         addLog("<font color='green'>成功</font>", true);
@@ -452,19 +455,11 @@
                         // 連接後刷新狀態
                         setTimeout(refreshStates, 1000);
                     })
-                    .catch(error => {
-                        addLogError(error);
-                    });
-                })
-                .catch(error => {
-                    addLogError(error);
+                    // Removed redundant catch that would be caught by the outer chain
                 });
-            })
-            .catch(error => {
-                addLogError(error);
-            });
+            }); // Removed redundant catch that would be caught by the outer chain
         })
-        .catch(error => {
+        .catch(error => { // This single catch will handle errors from the entire promise chain
             addLogError(error);
         });
     }
@@ -479,9 +474,9 @@
         } else {
             if (bluetoothDevice.gatt.connected) {
                 bluetoothDevice.gatt.disconnect();
-                if (!bluetoothDevice.gatt.connected) {
-                    addLog("<font color='green'>成功</font>", true);
-                }
+                // The onDisconnected event listener will handle UI updates and logging
+                // So, we don't need to check bluetoothDevice.gatt.connected immediately here for success message
+                // It will be logged by onDisconnected
             } else {
                 addLogError("沒有連接設備。");
             }
